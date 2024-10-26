@@ -56,11 +56,21 @@ exports.handler = async function (event) {
         const data = await fetchZohoAccount(accountId);
         return {
             statusCode: 200,
+            headers: {
+                "Access-Control-Allow-Origin": "*", // Allow all origins or set specific origin
+                "Access-Control-Allow-Headers": "Content-Type",
+                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            },
             body: JSON.stringify(data)
         };
     } catch (error) {
         return {
             statusCode: 500,
+            headers: {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Headers": "Content-Type",
+                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            },
             body: JSON.stringify({ message: error.message })
         };
     }
