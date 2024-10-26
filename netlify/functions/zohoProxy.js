@@ -21,7 +21,6 @@ const getAccessToken = async () => {
         // Update accessToken and expiration time
         accessToken = response.data.access_token;
         tokenExpiration = Date.now() + (response.data.expires_in - 300) * 1000; // Set token to refresh 5 min early
-
         return accessToken;
     } catch (error) {
         console.error("Error fetching access token:", error.message);
@@ -50,6 +49,19 @@ const fetchZohoAccount = async (accountId) => {
 };
 
 exports.handler = async function (event) {
+    // Handle preflight CORS request
+    if (event.httpMethod === "OPTIONS") {
+        return {
+            statusCode: 200,
+            headers: {
+                "Access-Control-Allow-Origin": "https://variphy-staging-466afaae024067fd31479fd.webflow.io",
+                "Access-Control-Allow-Headers": "Content-Type",
+                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            },
+            body: "",
+        };
+    }
+
     const accountId = event.queryStringParameters.id;
 
     try {
@@ -57,21 +69,21 @@ exports.handler = async function (event) {
         return {
             statusCode: 200,
             headers: {
-                "Access-Control-Allow-Origin": "*", // Allow all origins or set specific origin
+                "Access-Control-Allow-Origin": "https://variphy-staging-466afaae024067fd31479fd.webflow.io",
                 "Access-Control-Allow-Headers": "Content-Type",
                 "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
             },
-            body: JSON.stringify(data)
+            body: JSON.stringify(data),
         };
     } catch (error) {
         return {
             statusCode: 500,
             headers: {
-                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Origin": "https://variphy-staging-466afaae024067fd31479fd.webflow.io",
                 "Access-Control-Allow-Headers": "Content-Type",
                 "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
             },
-            body: JSON.stringify({ message: error.message })
+            body: JSON.stringify({ message: error.message }),
         };
     }
 };
