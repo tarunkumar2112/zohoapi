@@ -20,7 +20,7 @@ const getAccessToken = async () => {
 
         // Update accessToken and expiration time
         accessToken = response.data.access_token;
-        tokenExpiration = Date.now() + (response.data.expires_in - 300) * 1000; // Set token to refresh 5 min early
+        tokenExpiration = Date.now() + (response.data.expires_in - 300) * 1000;
         return accessToken;
     } catch (error) {
         console.error("Error fetching access token:", error.message);
@@ -29,27 +29,44 @@ const getAccessToken = async () => {
 };
 
 const fetchZohoAccount = async (accountId) => {
-    // Check if token is still valid; refresh if needed
     if (!accessToken || Date.now() > tokenExpiration) {
         accessToken = await getAccessToken();
     }
 
     try {
-        // Perform the Zoho CRM API request
-        const response = await axios.get(`https://www.zohoapis.com/crm/v2/Accounts/${accountId}`, {
-            headers: {
-                Authorization: `Zoho-oauthtoken ${accessToken}`
-            }
+        // Get account details
+        const accountResponse = await axios.get(`https://www.zohoapis.com/crm/v2/Accounts/${accountId}`, {
+            headers: { Authorization: `Zoho-oauthtoken ${accessToken}` }
         });
-        return response.data;
+
+        const accountData = accountResponse.data.data[0];
+
+        // Fetch owner and customer success manager details
+        const ownerId = accountData.Owner.id;
+        const customerSuccessManagerId = accountData.Customer_Success_Manager.id;
+
+        const [ownerResponse, csmResponse] = await Promise.all([
+            axios.get(`https://www.zohoapis.com/crm/v2/users/${ownerId}`, {
+                headers: { Authorization: `Zoho-oauthtoken ${accessToken}` }
+            }),
+            axios.get(`https://www.zohoapis.com/crm/v2/users/${customerSuccessManagerId}`, {
+                headers: { Authorization: `Zoho-oauthtoken ${accessToken}` }
+            })
+        ]);
+
+        // Build and return the combined data object
+        return {
+            accountData,
+            ownerData: ownerResponse.data,
+            customerSuccessManagerData: csmResponse.data
+        };
     } catch (error) {
-        console.error("Error fetching Zoho account data:", error.message);
-        throw new Error("Could not fetch Zoho account data.");
+        console.error("Error fetching Zoho account or user data:", error.message);
+        throw new Error("Could not fetch Zoho account or user data.");
     }
 };
 
 exports.handler = async function (event) {
-    // Handle preflight CORS request
     if (event.httpMethod === "OPTIONS") {
         return {
             statusCode: 200,
